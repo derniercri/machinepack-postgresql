@@ -13,14 +13,13 @@ module.exports = {
   description: 'Build and initialize a connection manager instance for this database.',
 
 
-  extendedDescription:
-  'The `manager` instance returned by this method contains any configuration that is necessary ' +
-  'for communicating with the database and establishing connections (e.g. host, user, password) ' +
-  'as well as any other relevant metadata.  The manager will often also contain a reference ' +
-  'to some kind of native container (e.g. a connection pool).\n' +
-  '\n' +
-  'Note that a manager instance does not necessarily need to correspond with a pool though--' +
-  'it might simply be a container for storing config, or it might refer to multiple pools.',
+  extendedDescription: 'The `manager` instance returned by this method contains any configuration that is necessary ' +
+    'for communicating with the database and establishing connections (e.g. host, user, password) ' +
+    'as well as any other relevant metadata.  The manager will often also contain a reference ' +
+    'to some kind of native container (e.g. a connection pool).\n' +
+    '\n' +
+    'Note that a manager instance does not necessarily need to correspond with a pool though--' +
+    'it might simply be a container for storing config, or it might refer to multiple pools.',
 
 
   sync: true,
@@ -32,13 +31,11 @@ module.exports = {
       description: 'A connection string to use to connect to a Postgresql database.',
       extendedDescription: 'Be sure to include credentials. You can also optionally provide the name of an existing database on your Postgresql server.',
       example: 'postgres://mikermcneil:p4ssw02D@localhost:5432/some_db',
-      required: true
     },
 
     onUnexpectedFailure: {
       description: 'A function to call any time an unexpected error event is received from this manager or any of its connections.',
-      extendedDescription:
-        'This can be used for anything you like, whether that\'s sending an email to devops, ' +
+      extendedDescription: 'This can be used for anything you like, whether that\'s sending an email to devops, ' +
         'or something as simple as logging a warning to the console.\n' +
         '\n' +
         'For example:\n' +
@@ -65,8 +62,7 @@ module.exports = {
 
     success: {
       description: 'The manager was successfully created.',
-      extendedDescription:
-        'The new manager should be passed in to `getConnection()`.' +
+      extendedDescription: 'The new manager should be passed in to `getConnection()`.' +
         'Note that _no matter what_, this manager must be capable of ' +
         'spawning an infinite number of connections (i.e. via `getConnection()`).  ' +
         'The implementation of how exactly it does this varies on a driver-by-driver ' +
@@ -93,8 +89,7 @@ module.exports = {
 
     failed: {
       description: 'Could not create a connection manager for this database using the specified connection string.',
-      extendedDescription:
-        'If this exit is called, it might mean any of the following:\n' +
+      extendedDescription: 'If this exit is called, it might mean any of the following:\n' +
         ' + the credentials encoded in the connection string are incorrect\n' +
         ' + there is no database server running at the provided host (i.e. even if it is just that the database process needs to be started)\n' +
         ' + there is no software "database" with the specified name running on the server\n' +
@@ -197,62 +192,64 @@ module.exports = {
     // (call `malformed` if invalid).
     //
     // Remember: connection string takes priority over `meta` in the event of a conflict.
-    try {
-      var urlToParse = inputs.connectionString;
-      // We don't actually care about the protocol, but `url.parse()` returns funky results
-      // if the argument doesn't have one.  So we'll add one if necessary.
-      // See https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax
-      if (!urlToParse.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
-        urlToParse = 'postgresql://' + urlToParse;
-      }
-      var parsedConnectionStr = url.parse(urlToParse);
-
-      // Parse port & host
-      var DEFAULT_HOST = 'localhost';
-      var DEFAULT_PORT = 5432;
-
-      if (parsedConnectionStr.port) {
-        _clientConfig.port = +parsedConnectionStr.port;
-      } else {
-        _clientConfig.port = DEFAULT_PORT;
-      }
-
-      if (parsedConnectionStr.hostname) {
-        _clientConfig.host = parsedConnectionStr.hostname;
-      } else {
-        _clientConfig.host = DEFAULT_HOST;
-      }
-
-      // Parse user & password
-      if (parsedConnectionStr.auth && _.isString(parsedConnectionStr.auth)) {
-        var authPieces = parsedConnectionStr.auth.split(/:/);
-        if (authPieces[0]) {
-          _clientConfig.user = authPieces[0];
+    if (!inputs.meta.socket) {
+      try {
+        var urlToParse = inputs.connectionString;
+        // We don't actually care about the protocol, but `url.parse()` returns funky results
+        // if the argument doesn't have one.  So we'll add one if necessary.
+        // See https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax
+        if (!urlToParse.match(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//)) {
+          urlToParse = 'postgresql://' + urlToParse;
         }
-        if (authPieces[1]) {
-          _clientConfig.password = authPieces[1];
+        var parsedConnectionStr = url.parse(urlToParse);
+
+        // Parse port & host
+        var DEFAULT_HOST = 'localhost';
+        var DEFAULT_PORT = 5432;
+
+        if (parsedConnectionStr.port) {
+          _clientConfig.port = +parsedConnectionStr.port;
+        } else {
+          _clientConfig.port = DEFAULT_PORT;
         }
-      }
 
-      // Parse database name
-      if (_.isString(parsedConnectionStr.pathname)) {
-        var _databaseName = parsedConnectionStr.pathname;
-
-        // Trim leading and trailing slashes
-        _databaseName = _databaseName.replace(/^\/+/, '');
-        _databaseName = _databaseName.replace(/\/+$/, '');
-
-        // If anything is left, use it as the database name.
-        if (_databaseName) {
-          _clientConfig.database = _databaseName;
+        if (parsedConnectionStr.hostname) {
+          _clientConfig.host = parsedConnectionStr.hostname;
+        } else {
+          _clientConfig.host = DEFAULT_HOST;
         }
+
+        // Parse user & password
+        if (parsedConnectionStr.auth && _.isString(parsedConnectionStr.auth)) {
+          var authPieces = parsedConnectionStr.auth.split(/:/);
+          if (authPieces[0]) {
+            _clientConfig.user = authPieces[0];
+          }
+          if (authPieces[1]) {
+            _clientConfig.password = authPieces[1];
+          }
+        }
+
+        // Parse database name
+        if (_.isString(parsedConnectionStr.pathname)) {
+          var _databaseName = parsedConnectionStr.pathname;
+
+          // Trim leading and trailing slashes
+          _databaseName = _databaseName.replace(/^\/+/, '');
+          _databaseName = _databaseName.replace(/\/+$/, '');
+
+          // If anything is left, use it as the database name.
+          if (_databaseName) {
+            _clientConfig.database = _databaseName;
+          }
+        }
+      } catch (_e) {
+        _e.message = util.format('Provided value (`%s`) is not a valid Postgres connection string.', inputs.connectionString) + ' Error details: ' + _e.message;
+        return exits.malformed({
+          error: _e,
+          meta: inputs.meta
+        });
       }
-    } catch (_e) {
-      _e.message = util.format('Provided value (`%s`) is not a valid Postgres connection string.', inputs.connectionString) + ' Error details: ' + _e.message;
-      return exits.malformed({
-        error: _e,
-        meta: inputs.meta
-      });
     }
 
     // Create a connection pool.
